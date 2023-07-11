@@ -1,10 +1,10 @@
-CC?=clang
-LD?=wasm-ld
-V8?=d8
+CC=/home/tim/build-llvm/bin/clang
+LD=/home/tim/build-llvm/bin/wasm-ld
+V8=/home/tim/v8/out/x64.optdebug/d8
 JSC?=jsc
 SPIDERMONKEY?=js
 
-all: v8.test jsc.test spidermonkey.test
+all: test.wasm # jsc.test spidermonkey.test
 
 v8.test: JS?=$(V8) --expose-gc 
 jsc.test: JS?=$(JSC) --useWeakRefs=true

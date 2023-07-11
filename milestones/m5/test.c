@@ -14,7 +14,7 @@ typedef __SIZE_TYPE__ size_t;
 
 typedef __externref_t externref;
 
-void WASM_IMPORT(rt, invoke)(externref);
+void WASM_IMPORT(rt, invoke)(externref, int);
 void WASM_IMPORT(rt, out_of_memory)(void);
 
 // Useful for debugging.
@@ -42,6 +42,10 @@ static Handle freelist_pop (void) {
   return ret;
 }
 
+struct freelist *tmpHead;
+static void init(void) {
+  tmpHead = malloc(sizeof(struct freelist));
+}
 static void freelist_push (Handle h) {
   struct freelist *head = malloc(sizeof(struct freelist));
   if (!head) {
@@ -104,8 +108,9 @@ struct obj* WASM_EXPORT(make_obj)() {
 }
 
 void WASM_EXPORT(free_obj)(struct obj* obj) {
-  release(obj->callback_handle);
+  uintptr_t handle = obj->callback_handle;
   free(obj);
+  release(handle);
 }
 
 void WASM_EXPORT(attach_callback)(struct obj* obj, externref callback) {
@@ -113,6 +118,6 @@ void WASM_EXPORT(attach_callback)(struct obj* obj, externref callback) {
   obj->callback_handle = intern(callback);
 }
 
-void WASM_EXPORT(invoke_callback)(struct obj* obj) {
-  invoke(handle_value(obj->callback_handle));
+void WASM_EXPORT(invoke_callback)(struct obj* obj, int arg) {
+  invoke(handle_value(obj->callback_handle), arg - 1);
 }
