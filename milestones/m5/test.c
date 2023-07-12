@@ -1,4 +1,6 @@
 #include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
 
 typedef __SIZE_TYPE__ size_t;
 
@@ -19,7 +21,12 @@ void WASM_IMPORT(rt, out_of_memory)(void);
 
 // Useful for debugging.
 void WASM_IMPORT(env, wasm_log)(void*);
+void WASM_IMPORT(env, wasm_logobj)(externref);
 void WASM_IMPORT(env, wasm_logi)(int);
+externref WASM_IMPORT(env, window)(void);
+externref WASM_IMPORT(env, to_jsstring)(char*);
+externref WASM_IMPORT(env, to_jsnumber)(int*);
+externref WASM_IMPORT(env, js_property_get)(externref, externref);
 
 void *malloc(size_t size);
 void free(void *p);
@@ -93,9 +100,29 @@ static externref handle_value(Handle h) {
     : __builtin_wasm_table_get(objects, h);
 }
 
+static Handle jsGetProp(Handle obj, char *prop) {
+  externref jsObj = handle_value(obj);
+  externref jsProp = to_jsstring(prop);
+  externref jsVal = js_property_get(jsObj, jsProp);
+  return intern(jsVal);
+}
+
+static Handle logObject(Handle obj){
+  externref jsObj = handle_value(obj);
+  wasm_logobj(jsObj);
+  return obj;
+} 
+
 struct obj {
   uintptr_t callback_handle;
+  uint32_t hello;
 };
+
+void WASM_EXPORT(run)(){
+  Handle w = intern(window());
+  Handle h = jsGetProp(w, "document");
+  wasm_logobj(handle_value(h));
+}
 
 struct obj* WASM_EXPORT(make_obj)() {
   struct obj* obj = malloc(sizeof(struct obj));
@@ -104,6 +131,7 @@ struct obj* WASM_EXPORT(make_obj)() {
     __builtin_trap();
   }
   obj->callback_handle = -1;
+  obj->hello = 1;
   return obj;
 }
 
