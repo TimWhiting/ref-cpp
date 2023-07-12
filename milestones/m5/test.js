@@ -45,8 +45,8 @@ const decode = (memory, base) => {
 
 let finalizers = new FinalizationRegistry(f => { f(); });
 
-function invoke(callback) {
-    return callback()
+function invoke(callback, arg) {
+    return callback(arg)
 }
 function out_of_memory() {
     console.log('error: out of linear memory');
@@ -71,8 +71,8 @@ class WasmObject {
     attachCallback(f) {
         this.wasm.exports.attach_callback(this.obj, f);
     }
-    invokeCallback(a, a2) {
-        this.wasm.exports.invoke_callback(this.obj, a, a2);
+    invokeCallback(a) {
+        this.wasm.exports.invoke_callback(this.obj, a);
     }
 }
 
@@ -98,7 +98,7 @@ async function test(n, instance, memory) {
     for (let i = 0; i < n; i++) {
         let obj = new WasmObject(instance, memory);
         obj.attachCallback(doSomething);
-        if (i == 0) obj.invokeCallback(i*2, 100);
+        if (i == 0) obj.invokeCallback(500);
     }
     await delay(1);
     console.log(`${nalloc} total allocated, ${nalloc - nfinalized} still live.`);
@@ -112,7 +112,7 @@ async function main() {
     let imports = { env: memory.env(), rt }
     let instance = new WebAssembly.Instance(mod, imports);
     instance.exports.run()
-    // await runTestLoop(10, test, 10, instance, memory);
+    await runTestLoop(10, test, 10, instance, memory);
     console.log(`Success; max ${nmax} objects live.`);
 }
 main()
